@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FrameStudio - 스마트 비디오 프레임 추출 자동화 스튜디오</title>
+  <meta name="description" content="동영상을 손쉽게 고화질 이미지로 자동 추출하는 스마트 프레임 캡처 스튜디오입니다. 샤오홍슈, 릴스, 쇼츠, 틱톡 워터마크 없는 원본 영상 분석 및 일괄 ZIP 다운로드 지원.">
+  
+  <!-- Open Graph / KakaoTalk & Naver Blog Card Preview -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://framestudio-jtvk.onrender.com/">
+  <meta property="og:title" content="FrameStudio - 고화질 동영상 프레임 자동 추출 & 캡처 도구">
+  <meta property="og:description" content="무설치 무료! 샤오홍슈, 인스타 릴스, 쇼츠, 틱톡 영상 링크만 넣으면 0.5초/1초 단위 초고화질 프레임을 연속 캡처하고 ZIP으로 한 번에 다운로드합니다.">
+  <meta property="og:image" content="https://framestudio-jtvk.onrender.com/og_image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FrameStudio - 고화질 동영상 프레임 자동 추출 & 캡처 도구">
+  <meta name="twitter:description" content="무설치 무료! 샤오홍슈, 인스타 릴스, 쇼츠, 틱톡 영상 링크만 넣으면 초고화질 프레임 일괄 캡처 및 ZIP 다운로드">
+  <meta name="twitter:image" content="https://framestudio-jtvk.onrender.com/og_image.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=20261005_douyin">
+  <!-- JSZip & FileSaver for Client-side ZIP Creation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+  <div class="app-background">
+    <div class="glow-orb glow-orb-1"></div>
+    <div class="glow-orb glow-orb-2"></div>
+    <div class="glow-orb glow-orb-3"></div>
+  </div>
+
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">FrameStudio</h1>
+          <p class="brand-tagline">동영상 프레임 자동 캡처 & 일괄 추출기</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <a href="http://localhost:8080" class="badge badge-server" id="serverStatusBadge" target="_self" title="클릭하여 백엔드 서버 모드로 전환">
+          <span class="server-dot online"></span>
+          <span id="serverStatusText">서버: http://localhost:8080</span>
+        </a>
+        <span class="badge badge-pulse"><span class="pulse-dot"></span>안전한 로컬 처리</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="container layout-grid">
+      <!-- Left Column: Controls & Input -->
+      <section class="panel control-panel">
+        <!-- 1. Dropzone Section -->
+        <div class="section-card drop-card" id="dropCard">
+          <input type="file" id="videoFileInput" accept="video/mp4,video/webm,video/quicktime,video/mkv,video/*" hidden>
+          <!-- Input Source Toggle Tabs -->
+          <div class="input-source-tabs">
+            <button type="button" class="source-tab-btn active" id="tabSourceFile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              파일 직접 올리기
+            </button>
+            <button type="button" class="source-tab-btn" id="tabSourceUrl">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              링크(URL) 가져오기
+            </button>
+          </div>
+
+          <!-- Mode 1: File Dropzone -->
+          <div class="dropzone" id="dropzone">
+            <div class="dropzone-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <h3 class="dropzone-title">동영상 파일 끌어놓기 또는 클릭</h3>
+            <p class="dropzone-desc">MP4, WebM, MOV 등 모든 비디오 지원</p>
+            <button type="button" class="btn btn-outline" id="browseBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+              파일 탐색기 열기
+            </button>
+            <div class="demo-link-wrap">
+              <span>또는</span>
+              <button type="button" class="link-btn" id="loadSampleBtn">샘플 데모 비디오로 시험해보기</button>
+            </div>
+          </div>
+
+          <!-- Mode 2: URL Input Box -->
+          <div class="url-input-container" id="urlInputContainer" style="display: none;">
+            <div class="url-box-inner">
+              <div class="url-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+              </div>
+              <h3 class="url-box-title">동영상 웹 링크 붙여넣기</h3>
+              <p class="url-box-desc">유튜브(일반/Shorts), 인스타 릴스, 틱톡, 도우인(Douyin), 샤오홍슈(小红书), 직접 MP4 링크 지원</p>
+              
+              <div class="url-input-group">
+                <input type="text" id="videoUrlInput" class="custom-input url-field" placeholder="https://www.youtube.com/watch?v=... 또는 영상 링크">
+                <button type="button" class="btn btn-primary" id="loadUrlBtn">
+                  <span>가져오기</span>
+                </button>
+              </div>
+
+              <!-- URL Loading Indicator -->
+              <div class="url-loading-indicator" id="urlLoadingIndicator" style="display: none;">
+                <span class="status-spinner"></span>
+                <span id="urlLoadingStatusText">유튜브/웹 영상 분석 및 다운로드 중...</span>
+              </div>
+
+              <!-- Platform Selectors (Clickable Buttons) -->
+              <div class="platform-selector-wrap">
+                <span class="platform-label">링크 종류 선택:</span>
+                <div class="platform-chips" id="platformChips">
+                  <button type="button" class="platform-chip active" data-platform="youtube" data-placeholder="https://www.youtube.com/watch?v=... (유튜브 일반 영상)">
+                    <span class="p-dot youtube-dot"></span> YouTube
+                  </button>
+                  <button type="button" class="platform-chip" data-platform="shorts" data-placeholder="https://www.youtube.com/shorts/... (유튜브 쇼츠)">
+                    <span class="p-dot shorts-dot"></span> Shorts
+                  </button>
+                  <button type="button" class="platform-chip" data-platform="instagram" data-placeholder="https://www.instagram.com/reel/... (인스타 릴스)">
+                    <span class="p-dot insta-dot"></span> Reels
+                  </button>
+                  <button type="button" class="platform-chip" data-platform="tiktok" data-placeholder="https://www.tiktok.com/@.../video/... (틱톡)">
+                    <span class="p-dot tiktok-dot"></span> TikTok
+                  </button>
+                  <button type="button" class="platform-chip" data-platform="douyin" data-placeholder="https://v.douyin.com/... 또는 https://www.douyin.com/video/... (도우인 영상)">
+                    <span class="p-dot douyin-dot"></span> Douyin (도우인)
+                  </button>
+                  <button type="button" class="platform-chip" data-platform="xiaohongshu" data-placeholder="https://xhslink.com/... 또는 https://www.xiaohongshu.com/explore/... (샤오홍슈 영상)">
+                    <span class="p-dot xhs-dot"></span> Xiaohongshu (샤오홍슈)
+                  </button>
+                  <button type="button" class="platform-chip" data-platform="direct" data-placeholder="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4">
+                    <span class="p-dot direct-dot"></span> 직접 MP4
+                  </button>
+                </div>
+              </div>
+
+              <!-- Quick Demo URL fill button -->
+              <div class="quick-demo-url-wrap">
+                <button type="button" class="link-btn" id="fillSampleUrlBtn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  테스트용 유튜브 영상 링크 자동 입력해보기
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Video Metadata & Preview Card (Hidden initially) -->
+          <div class="video-info-box" id="videoInfoBox" style="display: none;">
+            <div class="video-preview-wrapper">
+              <video id="previewVideo" preload="metadata" muted playsinline></video>
+              <div class="video-overlay-badge" id="videoResolutionBadge">-- x --</div>
+            </div>
+            <div class="video-details">
+              <div class="video-name-row">
+                <span class="file-icon">🎬</span>
+                <strong id="videoFileName" class="truncate">비디오 파일명.mp4</strong>
+                <button type="button" class="btn btn-sm btn-accent" id="downloadVideoBtn" title="현재 동영상 파일(MP4) 바로 다운로드" style="padding: 6px 12px; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 0.8rem; font-weight: 600;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>영상 다운로드</span>
+                </button>
+                <button type="button" class="icon-btn remove-btn" id="removeVideoBtn" title="비디오 제거">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+              <div class="meta-pills">
+                <span class="meta-pill" id="metaDuration">길이: --:--</span>
+                <span class="meta-pill" id="metaSize">크기: -- MB</span>
+                <span class="meta-pill" id="metaFPS">FPS: 약 30</span>
+              </div>
+              <div class="video-actions-row" style="margin-top: 12px; display: flex; gap: 8px;">
+                <button type="button" class="btn btn-primary" id="downloadVideoBigBtn" style="flex: 1; justify-content: center; padding: 11px 16px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; border-radius: 10px; cursor: pointer;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>🎬 원본 동영상 다운로드 (MP4 파일 저장)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Extraction Settings -->
+        <div class="section-card settings-card">
+          <h2 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            추출 모드 설정
+          </h2>
+
+          <!-- Mode Tabs -->
+          <div class="tab-group" role="tablist">
+            <button type="button" class="tab-btn active" data-mode="interval" id="tabInterval">
+              <span class="tab-icon">⏱️</span> 시간 간격 (초)
+            </button>
+            <button type="button" class="tab-btn" data-mode="totalCount" id="tabTotalCount">
+              <span class="tab-icon">🔢</span> 균등 총 개수
+            </button>
+            <button type="button" class="tab-btn" data-mode="fps" id="tabFps">
+              <span class="tab-icon">⚡</span> 초당 FPS
+            </button>
+            <button type="button" class="tab-btn" data-mode="scene" id="tabScene">
+              <span class="tab-icon">🎬</span> 장면 전환 감지
+            </button>
+          </div>
+
+          <!-- Dynamic Options based on Mode -->
+          <div class="mode-options-panel">
+            <!-- 1. Interval Options -->
+            <div class="mode-content" id="modeInterval">
+              <label for="intervalInput" class="form-label">
+                <span>프레임 추출 주기</span>
+                <span class="label-helper" id="intervalValueLabel">매 1.0초마다 1장</span>
+              </label>
+              <div class="input-range-row">
+                <input type="range" id="intervalSlider" min="0.1" max="10.0" step="0.1" value="1.0" class="custom-range">
+                <div class="input-with-unit">
+                  <input type="number" id="intervalInput" min="0.05" max="600" step="0.1" value="1.0" class="custom-input">
+                  <span class="unit">초</span>
+                </div>
+              </div>
+              <div class="quick-preset-chips">
+                <button type="button" class="chip" data-set-interval="0.5">0.5초 (고밀도)</button>
+                <button type="button" class="chip active" data-set-interval="1.0">1초 (표준)</button>
+                <button type="button" class="chip" data-set-interval="2.0">2초</button>
+                <button type="button" class="chip" data-set-interval="5.0">5초 (요약)</button>
+              </div>
+            </div>
+
+            <!-- 2. Total Count Options -->
+            <div class="mode-content" id="modeTotalCount" style="display: none;">
+              <label for="totalCountInput" class="form-label">
+                <span>추출할 총 이미지 개수</span>
+                <span class="label-helper" id="totalCountHelper">영상 전체에서 균등 분할</span>
+              </label>
+              <div class="input-range-row">
+                <input type="range" id="totalCountSlider" min="5" max="200" step="1" value="30" class="custom-range">
+                <div class="input-with-unit">
+                  <input type="number" id="totalCountInput" min="2" max="1000" step="1" value="30" class="custom-input">
+                  <span class="unit">장</span>
+                </div>
+              </div>
+              <div class="quick-preset-chips">
+                <button type="button" class="chip" data-set-count="10">10장</button>
+                <button type="button" class="chip active" data-set-count="30">30장</button>
+                <button type="button" class="chip" data-set-count="60">60장</button>
+                <button type="button" class="chip" data-set-count="100">100장</button>
+              </div>
+            </div>
+
+            <!-- 3. FPS Options -->
+            <div class="mode-content" id="modeFps" style="display: none;">
+              <label for="fpsSelect" class="form-label">
+                <span>초당 추출 프레임 레이트</span>
+                <span class="label-helper">1초 영상당 캡처 횟수</span>
+              </label>
+              <select id="fpsSelect" class="custom-select">
+                <option value="1">1 FPS (초당 1장)</option>
+                <option value="2">2 FPS (초당 2장)</option>
+                <option value="5">5 FPS (초당 5장)</option>
+                <option value="10">10 FPS (고속 모션 분석)</option>
+                <option value="all">원본 비디오 전체 프레임 (초당 ~30장)</option>
+              </select>
+            </div>
+
+            <!-- 4. Scene Change Detection Options -->
+            <div class="mode-content" id="modeScene" style="display: none;">
+              <div class="scene-mode-banner">
+                <span class="banner-badge">스마트 컷 감지</span>
+                <p class="banner-desc">영상의 화면 구성이나 배경이 바뀌는 <strong>새로운 장면(Scene)의 시작 순간</strong>만 자동으로 감지하여 캡처합니다.</p>
+              </div>
+
+              <label for="sceneThresholdSlider" class="form-label" style="margin-top: 14px;">
+                <span>장면 감지 민감도 (임계값)</span>
+                <span class="label-helper" id="sceneThresholdLabel">12% (슬라이드/강의 요약 추천)</span>
+              </label>
+              <div class="input-range-row">
+                <input type="range" id="sceneThresholdSlider" min="5" max="60" step="1" value="12" class="custom-range">
+                <div class="input-with-unit">
+                  <input type="number" id="sceneThresholdInput" min="3" max="90" step="1" value="12" class="custom-input">
+                  <span class="unit">%</span>
+                </div>
+              </div>
+              <div class="quick-preset-chips">
+                <button type="button" class="chip active" data-set-scene="12">강의/슬라이드 요약(12% 추천)</button>
+                <button type="button" class="chip" data-set-scene="18">표준 페이지 전환(18%)</button>
+                <button type="button" class="chip" data-set-scene="25">일반 영상 컷(25%)</button>
+                <button type="button" class="chip" data-set-scene="40">큰 배경 전환(40%)</button>
+              </div>
+
+              <div class="grid-2-col" style="margin-top: 14px;">
+                <div class="form-field">
+                  <label for="sceneMinDurationInput" class="sub-label">최소 슬라이드 유지 시간 (중복 방지)</label>
+                  <div class="input-with-unit" style="width: 100%;">
+                    <input type="number" id="sceneMinDurationInput" min="1.0" max="30.0" step="0.5" value="3.0" class="custom-input">
+                    <span class="unit">초</span>
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label for="sceneSampleRateSelect" class="sub-label">탐색 주기 (검사 속도)</label>
+                  <select id="sceneSampleRateSelect" class="custom-select">
+                    <option value="0.5">정밀 (0.5초마다 검사)</option>
+                    <option value="1.0" selected>고속 표준 (1.0초마다 검사 - 추천)</option>
+                    <option value="2.0">초고속 (2.0초마다 검사)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Range Cut (Start ~ End Time) -->
+          <div class="range-settings-group">
+            <div class="range-header">
+              <label class="custom-checkbox-label">
+                <input type="checkbox" id="enableRangeCrop">
+                <span class="checkbox-box"></span>
+                <span class="checkbox-text">특정 시간 구간만 추출 (구간 컷)</span>
+              </label>
+            </div>
+            <div class="range-inputs-row" id="rangeControlsRow" style="display: none;">
+              <div class="range-input-item">
+                <span class="sub-label">시작 시간</span>
+                <div class="input-with-unit">
+                  <input type="number" id="startTimeInput" min="0" step="0.1" value="0.0" class="custom-input">
+                  <span class="unit">초</span>
+                </div>
+              </div>
+              <span class="range-sep">~</span>
+              <div class="range-input-item">
+                <span class="sub-label">종료 시간</span>
+                <div class="input-with-unit">
+                  <input type="number" id="endTimeInput" min="0" step="0.1" value="10.0" class="custom-input">
+                  <span class="unit">초</span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-sm btn-ghost" id="setCurrentTimeAsRangeBtn" title="현재 비디오 재생 위치를 기준으로 입력">
+                현재위치 동기화
+              </button>
+            </div>
+          </div>
+
+          <!-- Section: Format & Quality & Resolution -->
+          <div class="advanced-settings-accordion">
+            <button type="button" class="accordion-header" id="accordionToggleBtn">
+              <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                이미지 포맷 및 해상도 설정
+              </span>
+              <span class="chevron-icon">▾</span>
+            </button>
+            <div class="accordion-body" id="accordionBody">
+              <div class="grid-2-col">
+                <div class="form-field">
+                  <label for="imgFormatSelect" class="sub-label">저장 포맷</label>
+                  <select id="imgFormatSelect" class="custom-select">
+                    <option value="image/png" selected>PNG (무손실 최고화질 - 추천)</option>
+                    <option value="image/jpeg">JPEG (표준 압축, 빠른 처리)</option>
+                    <option value="image/webp">WebP (차세대 고압축)</option>
+                  </select>
+                </div>
+                <div class="form-field" id="jpegQualityGroup" style="display: none;">
+                  <label for="imgQualityRange" class="sub-label">
+                    화질 <span id="qualityValDisplay">95%</span>
+                  </label>
+                  <input type="range" id="imgQualityRange" min="0.5" max="1.0" step="0.05" value="0.95" class="custom-range">
+                </div>
+              </div>
+
+              <div class="grid-2-col" style="margin-top: 12px;">
+                <div class="form-field">
+                  <label for="resolutionScaleSelect" class="sub-label">출력 해상도</label>
+                  <select id="resolutionScaleSelect" class="custom-select">
+                    <option value="1.0" selected>원본 해상도 (100%)</option>
+                    <option value="0.75">75% 크기</option>
+                    <option value="0.5">50% 크기 (절반)</option>
+                    <option value="1080p">최대 1080p (FHD) 맞춤</option>
+                    <option value="720p">최대 720p (HD) 맞춤</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="filePrefixInput" class="sub-label">파일명 접두사</label>
+                  <input type="text" id="filePrefixInput" value="frame" placeholder="예: frame" class="custom-input">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Estimation & Action Button -->
+          <div class="action-footer">
+            <div class="estimate-stats" id="estimateStats">
+              <span>예상 추출 수량: <strong id="estCountBadge" class="highlight-text">0장</strong></span>
+              <span class="bullet">•</span>
+              <span id="estTimeBadge">비디오를 선택해주세요</span>
+            </div>
+
+            <div class="action-btn-group">
+              <button type="button" class="btn btn-primary btn-large" id="startExtractBtn" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span>프레임 자동 추출 시작</span>
+              </button>
+              <button type="button" class="btn btn-danger btn-large" id="stopExtractBtn" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                  <rect x="6" y="6" width="12" height="12"></rect>
+                </svg>
+                <span>추출 중단</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Live Extraction Status & Output Gallery -->
+      <section class="panel output-panel">
+        <!-- Progress Bar Card -->
+        <div class="section-card progress-card" id="progressCard" style="display: none;">
+          <div class="progress-info-row">
+            <div class="progress-status-text">
+              <span class="status-spinner"></span>
+              <strong id="progressStatusLabel">비디오 프레임 추출 중...</strong>
+            </div>
+            <div class="progress-percentage" id="progressPercentLabel">0%</div>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progressBarFill" style="width: 0%;"></div>
+          </div>
+          <div class="progress-meta-row">
+            <span id="progressCountLabel">0 / 0 프레임 완료</span>
+            <span id="progressCurrentTimeLabel">현재 타임: 00:00.0</span>
+          </div>
+        </div>
+
+        <!-- Gallery Header & Actions -->
+        <div class="gallery-header-card">
+          <div class="gallery-title-wrap">
+            <h2 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              추출된 이미지 갤러리
+            </h2>
+            <span class="count-pill" id="galleryCountBadge">0장</span>
+          </div>
+
+          <div class="gallery-actions" id="galleryActions" style="opacity: 0.5; pointer-events: none;">
+            <button type="button" class="btn btn-secondary btn-sm" id="selectAllBtn">전체 선택</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="clearAllBtn">전체 삭제</button>
+            <button type="button" class="btn btn-accent btn-sm" id="downloadZipBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>전체 ZIP 압축 다운로드</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="gallery-empty-state" id="galleryEmptyState">
+          <div class="empty-icon-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          </div>
+          <h3>아직 추출된 이미지가 없습니다</h3>
+          <p>왼쪽 패널에서 동영상을 등록하고 [프레임 자동 추출 시작]을 누르면<br>고화질 캡처 이미지가 여기에 실시간으로 표시됩니다.</p>
+        </div>
+
+        <!-- Image Grid -->
+        <div class="gallery-grid" id="galleryGrid" style="display: none;"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Image Lightbox Modal -->
+  <div class="modal-backdrop" id="imageModal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-meta">
+          <strong id="modalFileName">frame_001.png</strong>
+          <span class="modal-time-badge" id="modalTimeBadge">00:01.50</span>
+          <span class="modal-dim-badge" id="modalDimBadge">1920x1080</span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-sm btn-accent" id="modalDownloadBtn">다운로드</button>
+          <button type="button" class="icon-btn close-modal-btn" id="modalCloseBtn" title="닫기 (ESC)">✕</button>
+        </div>
+      </div>
+      <div class="modal-image-wrapper">
+        <button type="button" class="nav-btn prev-btn" id="modalPrevBtn" title="이전 이미지 (←)">‹</button>
+        <img id="modalImage" src="" alt="확대 미리보기">
+        <button type="button" class="nav-btn next-btn" id="modalNextBtn" title="다음 이미지 (→)">›</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Hidden Canvas for frame extraction -->
+  <canvas id="offscreenCanvas" style="display: none;"></canvas>
+
+  <script src="app.js?v=20261113_v2"></script>
+</body>
+</html>
