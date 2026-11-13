@@ -1,0 +1,17 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Temporary downloaded videos
+temp_downloads/*
+!temp_downloads/.gitkeep
+
+# Environments & OS
+.env
+.venv/
+env/
+venv/
+.DS_Store
+Thumbs.db
+
